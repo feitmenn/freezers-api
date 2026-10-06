@@ -1,24 +1,24 @@
-const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://freezers-esport.eu';
-
-export default async function handler(event) {
+exports.handler = async function(event) {
+  var SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://freezers-esport.eu';
+  
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers: corsHeaders(), body: '' };
+    return { statusCode: 204, headers: corsHeaders(SITE_ORIGIN), body: '' };
   }
 
-  const params = new URLSearchParams(event.rawQuery || '');
-  const returnTo = params.get('returnTo') || SITE_ORIGIN;
+  var params = new URLSearchParams(event.rawQuery || '');
+  var returnTo = params.get('returnTo') || SITE_ORIGIN;
 
   if (!returnTo.startsWith(SITE_ORIGIN)) {
     return { statusCode: 400, body: 'Invalid returnTo origin' };
   }
 
-  const netlifySite = event.headers.host
-    ? `https://${event.headers.host}`
+  var netlifySite = event.headers.host
+    ? 'https://' + event.headers.host
     : '';
 
-  const callbackUrl = `${netlifySite}/.netlify/functions/steam-callback?returnTo=${encodeURIComponent(returnTo)}`;
+  var callbackUrl = netlifySite + '/.netlify/functions/steam-callback?returnTo=' + encodeURIComponent(returnTo);
 
-  const steamParams = new URLSearchParams({
+  var steamParams = new URLSearchParams({
     'openid.ns': 'http://specs.openid.net/auth/2.0',
     'openid.mode': 'checkid_setup',
     'openid.return_to': callbackUrl,
@@ -29,17 +29,16 @@ export default async function handler(event) {
 
   return {
     statusCode: 302,
-    headers: {
-      Location: `https://steamcommunity.com/openid/login?${steamParams}`,
-      ...corsHeaders()
-    },
+    headers: Object.assign({
+      Location: 'https://steamcommunity.com/openid/login?' + steamParams
+    }, corsHeaders(SITE_ORIGIN)),
     body: ''
   };
-}
+};
 
-function corsHeaders() {
+function corsHeaders(origin) {
   return {
-    'Access-Control-Allow-Origin': SITE_ORIGIN,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS'
   };
 }
